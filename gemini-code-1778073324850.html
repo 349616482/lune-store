@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUNE Professional</title>
+<style>
+  :root {
+    --lune-black: #111111; --lune-red: #c8102e; --lune-gold: #d4af37; --bg-light: #f4f4f4;
+  }
+  body, html {
+    margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: white; color: var(--lune-black); scroll-behavior: smooth;
+  }
+
+  /* --- PARALLAX SPOTLIGHT VIEW --- */
+  .spotlight-container { display: none; }
+  
+  .hero-box {
+    position: relative; height: 60vh; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  
+  /* This is the "Moving" Image */
+  .parallax-img {
+    position: absolute; top: 0; left: 0; width: 100%; height: 120%;
+    background-size: cover; background-position: center;
+    z-index: -1; transform: translateY(0); transition: transform 0.1s ease-out;
+  }
+
+  .hero-text {
+    text-align: center; color: white; text-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  }
+  .hero-text h1 { font-size: 50px; font-weight: 200; letter-spacing: 12px; text-transform: uppercase; margin: 0; }
+
+  .product-details {
+    max-width: 800px; margin: -50px auto 50px auto; background: white;
+    padding: 40px; border-radius: 8px; position: relative; z-index: 10;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center;
+  }
+  .price-tag { font-size: 24px; color: #666; margin: 20px 0; display: block; font-weight: 300; }
+  .description { line-height: 1.8; color: #444; margin-bottom: 30px; font-size: 16px; }
+
+  /* --- BUTTONS & TOAST --- */
+  .buy-btn {
+    background: var(--lune-black); color: white; border: none; padding: 18px 40px;
+    font-weight: bold; text-transform: uppercase; cursor: pointer; letter-spacing: 2px;
+    border-radius: 4px; transition: 0.3s;
+  }
+  .buy-btn:hover { background: var(--lune-gold); color: black; transform: scale(1.05); }
+  
+  #toast {
+    position: fixed; top: 20px; right: 20px; background: var(--lune-black);
+    color: white; padding: 15px 25px; border-radius: 4px; font-weight: bold;
+    display: none; z-index: 10000; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+
+  /* --- CART PAGE VIEW --- */
+  .cart-container { display: none; max-width: 800px; margin: 40px auto; padding: 20px; }
+  .cart-item { display: flex; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid #eee; }
+  .checkout-btn { width: 100%; padding: 20px; background: var(--lune-red); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; }
+
+</style>
+</head>
+<body>
+
+<div id="toast">✓ ADDED TO BAG</div>
+
+<div id="view-spotlight" class="spotlight-container">
+  <div class="hero-box">
+    <div id="p-img" class="parallax-img"></div>
+    <div class="hero-text">
+      <h1 id="p-name">LUNE PRODUCT</h1>
+    </div>
+  </div>
+  
+  <div class="product-details">
+    <span class="price-tag" id="p-price">$0.00</span>
+    <p class="description" id="p-desc">Experience the premium quality of LUNE. Crafted for professionals, designed for you.</p>
+    <button class="buy-btn" onclick="addCurrent()">Add to Bag</button>
+  </div>
+</div>
+
+<div id="view-cart" class="cart-container">
+  <h2 style="text-transform: uppercase; letter-spacing: 5px; text-align: center;">Your Bag</h2>
+  <div id="cart-list"></div>
+  <div style="margin-top:20px; border-top: 2px solid black; padding-top: 20px;">
+    <div style="display:flex; justify-content:space-between; font-size: 20px; font-weight: bold;">
+        <span>Total</span><span id="total-val">$0.00</span>
+    </div>
+    <button class="checkout-btn" onclick="alert('Checkout Ready')">Complete Order</button>
+  </div>
+</div>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const page = urlParams.get('page');
+  const type = urlParams.get('type');
+
+  // Product Database
+  const library = {
+    'shampoo': { name: 'LUNE Shampoo', price: 22, img: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&q=80&w=1000' },
+    'seasalt': { name: 'LUNE Sea Salt Spray', price: 20, img: 'https://images.unsplash.com/photo-1527633593645-31c3f48ef2a9?auto=format&fit=crop&q=80&w=1000' },
+    'clay': { name: 'LUNE Hair Clay', price: 18, img: 'https://images.unsplash.com/photo-1590159443493-96024926134a?auto=format&fit=crop&q=80&w=1000' }
+  };
+
+  // 1. ROUTING
+  if (page === 'cart') {
+    document.getElementById('view-cart').style.display = 'block';
+    renderCart();
+  } else {
+    document.getElementById('view-spotlight').style.display = 'block';
+    setupSpotlight(type);
+  }
+
+  // 2. SETUP SPOTLIGHT
+  function setupSpotlight(id) {
+    const data = library[id] || library['shampoo'];
+    document.getElementById('p-name').innerText = data.name;
+    document.getElementById('p-price').innerText = "$" + data.price.toFixed(2);
+    document.getElementById('p-img').style.backgroundImage = `url('${data.img}')`;
+    
+    // Parallax Effect Logic
+    window.addEventListener('scroll', () => {
+      const scroll = window.pageYOffset;
+      document.getElementById('p-img').style.transform = `translateY(${scroll * 0.4}px)`;
+    });
+  }
+
+  // 3. CART LOGIC
+  function addCurrent() {
+    const data = library[type] || library['shampoo'];
+    let bag = JSON.parse(localStorage.getItem('lune_bag')) || [];
+    bag.push({ name: data.name, price: data.price, qty: 1 });
+    localStorage.setItem('lune_bag', JSON.stringify(bag));
+    
+    const t = document.getElementById('toast');
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2000);
+  }
+
+  function renderCart() {
+    const list = document.getElementById('cart-list');
+    let bag = JSON.parse(localStorage.getItem('lune_bag')) || [];
+    let total = 0;
+    list.innerHTML = '';
+    bag.forEach(item => {
+      total += item.price;
+      list.innerHTML += `<div class="cart-item"><span>${item.name}</span><span>$${item.price.toFixed(2)}</span></div>`;
+    });
+    document.getElementById('total-val').innerText = "$" + total.toFixed(2);
+  }
+</script>
+</body>
+</html>
